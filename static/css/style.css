@@ -272,3 +272,51 @@ td a:hover {
 .actions-cell .favorite-btn.active {
     color: #ffc107;
 }
+
+/* --- コントロールUIのスタイル調整 --- */
+.controls {
+    margin-bottom: 1.5rem;
+}
+.filter-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem; /* 各コントロールグループ間のスペース */
+    background-color: #f1f3f5;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.control-group label {
+    font-weight: bold;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+.control-group select,
+.control-group input[type="search"] {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+}
+.control-group button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--primary-color);
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* 検索グループを左側に、他のコントロールを右側に配置 */
+.search-group {
+    flex-grow: 1; /* 利用可能なスペースを埋めるように拡張 */
+}
+
+/* ヘッダーの元の検索フォームスタイルは不要になります */
+/* .search-form { ... } は削除しても構いません */

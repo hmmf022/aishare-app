@@ -12,6 +12,13 @@
             <!-- 検索キーワードを維持するためのhidden input -->
             <input type="hidden" name="q" value="{{ search_keyword or '' }}">
 
+			<!-- ★ここにキーワード検索フォームを移動・追加 -->
+			<div class="control-group search-group">
+				<label for="search-keyword">キーワード:</label>
+				<input type="search" id="search-keyword" name="q" placeholder="タイトル, タグ..." value="{{ search_keyword or '' }}">
+				<button type="submit">検索</button>
+			</div>
+
             <div class="control-group">
                 <label for="tag-filter">タグで絞り込む:</label>
                 <select name="tag" id="tag-filter" onchange="this.form.submit()">
