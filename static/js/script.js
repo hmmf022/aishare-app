@@ -1,6 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- いいねボタンの処理 ---
+    const updateLikeCount = (button, newCount) => {
+        const parentElement = button.closest('tr') || button.closest('.card');
+        if (!parentElement) return;
+
+        // テーブル用：いいね数のセルを探す
+        let countSpan = parentElement.querySelector('.likes-cell .like-count');
+        if (countSpan) {
+            countSpan.textContent = newCount;
+        }
+        // カード用：ボタン内のspanを探す
+        countSpan = button.querySelector('.like-count');
+        if(countSpan) {
+             countSpan.textContent = newCount;
+        }
+    };
+
     document.querySelectorAll('.like-btn').forEach(button => {
         button.addEventListener('click', async () => {
             const postId = button.dataset.postId;
@@ -11,27 +26,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (data.success) {
                     button.classList.toggle('active', data.liked);
-                    // アイコンを♥と♡で切り替える
-                    button.textContent = data.liked ? '♥' : '♡';
-
-                    // テーブルの行(tr)からいいね数の要素を探して更新する
-                    const row = button.closest('tr');
-                    const countSpan = row.querySelector('.likes-cell .like-count');
-                    if (countSpan) {
-                        countSpan.textContent = data.count;
+                    const icon = data.liked ? '♥' : '♡';
+                    // カード形式のボタンにはいいね数も含まれるので、アイコンだけ差し替える
+                    const likeCountSpan = button.querySelector('.like-count');
+                    if (likeCountSpan) {
+                        button.innerHTML = `${icon}<span class="like-count">${data.count}</span>`;
+                    } else {
+                        button.textContent = icon;
                     }
+                    updateLikeCount(button, data.count);
                 }
-            } catch (error) {
-                console.error('Like action failed:', error);
-            }
+            } catch (error) { console.error('Like action failed:', error); }
         });
     });
 
-    // --- お気に入りボタンの処理 ---
     document.querySelectorAll('.favorite-btn').forEach(button => {
         button.addEventListener('click', async () => {
             const postId = button.dataset.postId;
-            const row = button.closest('tr');
+            const elementToRemove = button.closest('tr') || button.closest('.card');
 
             try {
                 const response = await fetch(`/favorite/${postId}`, { method: 'POST' });
@@ -40,20 +52,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (data.success) {
                     button.classList.toggle('active', data.favorited);
-                    // アイコンを★と☆で切り替える
                     button.textContent = data.favorited ? '★' : '☆';
 
-                    // お気に入り一覧ページでお気に入り解除した場合、その行を非表示にする
-                    if (window.location.pathname.includes('/favorites') && !data.favorited) {
-                        row.style.transition = 'opacity 0.5s';
-                        row.style.opacity = '0';
-                        setTimeout(() => row.remove(), 500);
+                    if (window.location.pathname.includes('/favorites') && !data.favorited && elementToRemove) {
+                        elementToRemove.style.transition = 'opacity 0.5s, transform 0.5s';
+                        elementToRemove.style.opacity = '0';
+                        elementToRemove.style.transform = 'scale(0.95)';
+                        setTimeout(() => elementToRemove.remove(), 500);
                     }
                 }
-            } catch (error) {
-                console.error('Favorite action failed:', error);
-            }
+            } catch (error) { console.error('Favorite action failed:', error); }
         });
     });
-
 });

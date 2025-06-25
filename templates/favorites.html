@@ -1,33 +1,25 @@
 {% extends 'base.html' %}
-
 {% block title %}お気に入り一覧 - {{ super() }}{% endblock %}
-
 {% block content %}
 <section class="post-list">
     <h2>お気に入り一覧</h2>
     <div class="cards">
         {% for post in posts %}
         <div class="card" data-post-id="{{ post.id }}">
-            <h3 class="card-title">
-                <a href="{{ post.url }}" target="_blank" rel="noopener noreferrer">{{ post.title }}</a>
-            </h3>
+            <h3 class="card-title"><a href="{{ post.url }}" target="_blank" rel="noopener noreferrer">{{ post.title }}</a></h3>
             <div class="card-tags">
-                {% for tag_name in post.tags.split(',') %}
-                <span class="tag">#{{ tag_name }}</span>
-                {% endfor %}
+                {% if post.tags %}{% for tag_name in post.tags.split(',') %}<span class="tag">#{{ tag_name }}</span>{% endfor %}{% endif %}
             </div>
             <div class="card-footer">
                 <div class="actions">
-                    <button class="like-btn {% if post.is_liked %}active{% endif %}" data-post-id="{{ post.id }}">
-                        ♡ <span class="like-count">{{ post.likes_count }}</span>
-                    </button>
-                    <button class="favorite-btn {% if post.is_favorited %}active{% endif %}" data-post-id="{{ post.id }}">☆</button>
+                    <button class="like-btn {% if post.is_liked %}active{% endif %}" data-post-id="{{ post.id }}" title="いいね">{% if post.is_liked %}♥{% else %}♡{% endif %}<span class="like-count">{{ post.likes_count }}</span></button>
+                    <button class="favorite-btn active" data-post-id="{{ post.id }}" title="お気に入り解除">★</button>
                 </div>
-                <time class="post-date">{{ post.created_at.split(' ')[0] }}</time>
+                <time class="post-date">{{ post.created_at.split(' ')[0] if post.created_at else '' }}</time>
             </div>
         </div>
         {% else %}
-        <p>お気に入り登録された事例はありません。</p>
+        <p class="no-posts-card">お気に入り登録された事例はありません。</p>
         {% endfor %}
     </div>
 </section>

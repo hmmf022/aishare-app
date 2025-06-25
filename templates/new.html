@@ -1,7 +1,5 @@
 {% extends 'base.html' %}
-
-{% block title %}事例を投稿する - {{ super() }}{% endblock %}
-
+{% block title %}ナレッジを共有する - {{ super() }}{% endblock %}
 {% block content %}
 <section class="submission-form">
     <h2>ナレッジを共有する</h2>
@@ -15,9 +13,7 @@
             <label>タグを選択 (一つ以上選択してください)</label>
             <div class="tag-checkboxes">
                 {% for tag in tags %}
-                <label>
-                    <input type="checkbox" name="tags" value="{{ tag.id }}"> #{{ tag.name }}
-                </label>
+                <label><input type="checkbox" name="tags" value="{{ tag.id }}"> #{{ tag.name }}</label>
                 {% endfor %}
             </div>
         </div>

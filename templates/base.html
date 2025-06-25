@@ -11,24 +11,19 @@
         <div class="container">
             <h1><a href="{{ url_for('index') }}">社内AI活用事例共有アプリ</a></h1>
             <nav>
-                <!-- ★ここから検索フォームを削除 -->
-                <!--
-                <form action="{{ url_for('index') }}" method="get" class="search-form">
-                    <input type="search" name="q" placeholder="キーワード検索..." value="{{ search_keyword or '' }}">
-                    <button type="submit">検索</button>
-                </form>
-                 -->
-                <!-- ★ここまで削除 -->
-                <a href="{{ url_for('new_post') }}" class="nav-button">事例を投稿する</a>
+                {% if request.path != url_for('index') %}
+                <a href="{{ url_for('index') }}" class="nav-link">ナレッジ一覧</a>
+                {% endif %}
+                {% if request.path != url_for('favorites') %}
                 <a href="{{ url_for('favorites') }}" class="nav-link">お気に入り一覧</a>
+                {% endif %}
+                <a href="{{ url_for('new_post') }}" class="nav-button">ナレッジを共有する</a>
             </nav>
         </div>
     </header>
-
     <main class="container">
         {% block content %}{% endblock %}
     </main>
-
     <footer>
         <div class="container">
             <p>© 2025 Your Company</p>
