@@ -72,6 +72,9 @@
                         <span class="like-count">{{ post.likes_count }}</span>
                     </td>
                     <td class="actions-cell">
+                        {% if post.user_uuid == current_user_uuid %}
+                        <button class="btn-edit-post" data-post-id="{{ post.id }}" title="編集">✎</button>
+                        {% endif %}
                         <button class="like-btn {% if post.is_liked %}active{% endif %}" data-post-id="{{ post.id }}" title="いいね">{% if post.is_liked %}♥{% else %}♡{% endif %}</button>
                         <button class="favorite-btn {% if post.is_favorited %}active{% endif %}" data-post-id="{{ post.id }}" title="お気に入り">{% if post.is_favorited %}★{% else %}☆{% endif %}</button>
                     </td>
@@ -85,4 +88,28 @@
         </table>
     </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<div class="modal-overlay" id="edit-modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <form id="edit-post-form">
+            <h3>チャットの編集</h3>
+            <div class="form-group">
+                <label for="edit-title">タイトル</label>
+                <input type="text" id="edit-title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label>タグ</label>
+                <div class="accordion-tags" id="edit-accordion-tags">
+                    <!-- ここにJSでアコーディオンが生成される -->
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="cancel-edit-btn" class="btn btn-secondary">キャンセル</button>
+                <button type="submit" class="btn btn-primary">保存する</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

@@ -7,37 +7,31 @@
     <div class="table-container">
         <table>
             <thead>
-                <tr>
-                    <th>タイトル</th><th>投稿日時</th><th>現在の状態</th><th class="col-actions">アクション</th>
-                </tr>
+                <tr><th>タイトル</th><th>投稿日時</th><th>現在の状態</th><th class="col-actions">アクション</th></tr>
             </thead>
-			<tbody>
-				{% for post in posts %}
-				<tr class="{{ 'hidden-row' if not post.is_visible }}">
-					<!-- ★タイトルセルにIDを追加 -->
-					<td id="title-cell-{{ post.id }}">
-						<a href="{{ post.url }}" target="_blank" rel="noopener noreferrer">{{ post.title }}</a>
-					</td>
-					<td>{{ post.created_at.split(' ')[0] }}</td>
-					<td>
-						{% if post.is_visible %}<span class="status-visible">表示中</span>
-						{% else %}<span class="status-hidden">非表示</span>{% endif %}
-					</td>
-					<!-- ★アクションセルにIDと編集ボタンを追加 -->
-					<td class="actions-cell" id="action-cell-{{ post.id }}">
-						<button type="button" class="btn-edit">編集</button>
-						<form action="{{ url_for('toggle_visibility', post_id=post.id) }}" method="post" style="display: inline;">
-							<button type="submit" class="btn-toggle">{% if post.is_visible %}非表示にする{% else %}表示する{% endif %}</button>
-						</form>
-						<form action="{{ url_for('delete_post', post_id=post.id) }}" method="post" style="display: inline;">
-							<button type="submit" class="btn-delete" onclick="return confirm('このチャットを完全に削除します。よろしいですか？');">削除</button>
-						</form>
-					</td>
-				</tr>
-				{% else %}
-				<tr><td colspan="4" class="no-posts">チャットはまだありません。</td></tr>
-				{% endfor %}
-			</tbody>
+            <tbody>
+                {% for post in posts %}
+                <tr class="{{ 'hidden-row' if not post.is_visible }}">
+                    <td id="title-cell-{{ post.id }}"><a href="{{ post.url }}" target="_blank" rel="noopener noreferrer">{{ post.title }}</a></td>
+                    <td>{{ post.created_at.split(' ')[0] }}</td>
+                    <td>
+                        {% if post.is_visible %}<span class="status-visible">表示中</span>
+                        {% else %}<span class="status-hidden">非表示</span>{% endif %}
+                    </td>
+                    <td class="actions-cell" id="action-cell-{{ post.id }}">
+                        <button type="button" class="btn-admin-edit btn-edit">編集</button>
+                        <form action="{{ url_for('toggle_visibility', post_id=post.id) }}" method="post" style="display: inline;">
+                            <button type="submit" class="btn-toggle">{% if post.is_visible %}非表示にする{% else %}表示する{% endif %}</button>
+                        </form>
+                        <form action="{{ url_for('delete_post', post_id=post.id) }}" method="post" style="display: inline;">
+                            <button type="submit" class="btn-delete" onclick="return confirm('この投稿を完全に削除します。よろしいですか？');">削除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="no-posts">投稿はまだありません。</td></tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
 </section>

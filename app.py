@@ -8,26 +8,38 @@ from collections import defaultdict
 app = Flask(__name__)
 DATABASE = 'data/aishare.db'
 
-# ... (get_db, close_connection, manage_user_uuid, set_user_uuid_cookie, get_user_uuid は変更なし) ...
+# --- データベース接続 ---
 def get_db():
     db = getattr(g, '_database', None)
-    if db is None: db = g._database = sqlite3.connect(DATABASE); db.row_factory = sqlite3.Row
+    if db is None:
+        db = g._database = sqlite3.connect(DATABASE)
+        db.row_factory = sqlite3.Row
     return db
+
 @app.teardown_appcontext
 def close_connection(exception):
     db = getattr(g, '_database', None)
-    if db is not None: db.close()
+    if db is not None:
+        db.close()
+
+# --- ユーザーID管理 ---
 @app.before_request
 def manage_user_uuid():
-    if 'user_uuid' not in request.cookies: g.user_uuid_to_set = str(uuid.uuid4())
-    else: g.user_uuid_to_set = None
+    if 'user_uuid' not in request.cookies:
+        g.user_uuid_to_set = str(uuid.uuid4())
+    else:
+        g.user_uuid_to_set = None
+
 @app.after_request
 def set_user_uuid_cookie(response):
-    if hasattr(g, 'user_uuid_to_set') and g.user_uuid_to_set: response.set_cookie('user_uuid', g.user_uuid_to_set, max_age=365*24*60*60)
+    if hasattr(g, 'user_uuid_to_set') and g.user_uuid_to_set:
+        response.set_cookie('user_uuid', g.user_uuid_to_set, max_age=365*24*60*60)
     return response
-def get_user_uuid(): return request.cookies.get('user_uuid', g.user_uuid_to_set)
 
-# ★【新規】カテゴリ化されたタグを取得するヘルパー関数
+def get_user_uuid():
+    return request.cookies.get('user_uuid', g.user_uuid_to_set)
+
+# --- ヘルパー関数 ---
 def get_categorized_tags():
     db = get_db()
     cursor = db.cursor()
@@ -38,42 +50,27 @@ def get_categorized_tags():
         ORDER BY c.id, t.id
     """
     rows = cursor.execute(query).fetchall()
-
-    # データをカテゴリごとにグループ化
     categorized = defaultdict(list)
     for row in rows:
         categorized[row['category_name']].append({'id': row['tag_id'], 'name': row['tag_name']})
-
-    # 整形してリストとして返す
     return [{'category_name': name, 'tags': tags} for name, tags in categorized.items()]
 
 # --- ルート定義 ---
 
 @app.route('/')
 def index():
-    # ... (この関数のロジックは長いので、下でまとめて示します) ...
-    # （※基本的にはテンプレートに渡すall_tagsをcategorized_tagsに変えるだけ）
+    user_uuid = get_user_uuid()
     db = get_db()
     cursor = db.cursor()
-    user_uuid = get_user_uuid()
-
     search_keyword = request.args.get('q', '')
     selected_date = request.args.get('date', '')
     selected_tag = request.args.get('tag', '')
     sort_by = request.args.get('sort', 'created_at')
     order = request.args.get('order', 'desc')
-
     if sort_by not in ['created_at', 'likes_count']: sort_by = 'created_at'
     if order.lower() not in ['asc', 'desc']: order = 'desc'
-
     params = [user_uuid, user_uuid]
     base_query = """
-        WITH PostWithTags AS (...)
-        SELECT ...
-    """
-
-    # base_queryのWITH句とSELECT句は省略せずに記述
-    full_base_query = f"""
         WITH PostWithTags AS (
             SELECT p.id, GROUP_CONCAT(t.name) as tags
             FROM posts p
@@ -82,45 +79,33 @@ def index():
             GROUP BY p.id
         )
         SELECT
-            p.id, p.url, p.title, p.created_at, p.is_visible, pwt.tags,
+            p.id, p.url, p.title, p.user_uuid, p.created_at, p.is_visible, pwt.tags,
             (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likes_count,
             (SELECT COUNT(*) FROM favorites WHERE post_id = p.id AND user_uuid = ?) > 0 AS is_favorited,
             (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_uuid = ?) > 0 AS is_liked
         FROM posts p
         LEFT JOIN PostWithTags pwt ON p.id = pwt.id
     """
-
     where_clauses = ["p.is_visible = 1"]
-    if search_keyword:
-        where_clauses.append("(p.title LIKE ? OR (pwt.tags IS NOT NULL AND pwt.tags LIKE ?))")
-        params.extend([f'%{search_keyword}%', f'%{search_keyword}%'])
-    if selected_date:
-        where_clauses.append("DATE(p.created_at) = ?")
-        params.append(selected_date)
-    if selected_tag:
-        where_clauses.append("(pwt.tags IS NOT NULL AND pwt.tags LIKE ?)")
-        params.append(f'%{selected_tag}%')
-
-    full_query = full_base_query + " WHERE " + " AND ".join(where_clauses) + f" ORDER BY {sort_by} {order}"
-
-    posts = cursor.execute(full_query, tuple(params)).fetchall()
-
-    return render_template('index.html',
-                           posts=posts,
-                           categorized_tags=get_categorized_tags(), # ★変更
+    if search_keyword: where_clauses.append("(p.title LIKE ? OR (pwt.tags IS NOT NULL AND pwt.tags LIKE ?))"); params.extend([f'%{search_keyword}%', f'%{search_keyword}%'])
+    if selected_date: where_clauses.append("DATE(p.created_at) = ?"); params.append(selected_date)
+    if selected_tag: where_clauses.append("(pwt.tags IS NOT NULL AND pwt.tags LIKE ?)"); params.append(f'%{selected_tag}%')
+    base_query += " WHERE " + " AND ".join(where_clauses) + f" ORDER BY {sort_by} {order}"
+    posts = cursor.execute(base_query, tuple(params)).fetchall()
+    return render_template('index.html', posts=posts, categorized_tags=get_categorized_tags(),
+                           current_user_uuid=user_uuid,
                            search_keyword=search_keyword, selected_date=selected_date,
                            selected_tag=selected_tag, current_sort=sort_by, current_order=order)
-
 
 @app.route('/new', methods=['GET', 'POST'])
 def new_post():
     if request.method == 'POST':
-        # ... (POST処理のロジックは変更なし) ...
+        user_uuid = get_user_uuid()
         db = get_db()
         cursor = db.cursor()
         url = request.form.get('url')
         tag_ids = request.form.getlist('tags')
-        if url and tag_ids:
+        if url and tag_ids and user_uuid:
             title = None
             try:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
@@ -132,19 +117,52 @@ def new_post():
                 print(f"[Info] Could not fetch title for '{url}'. Reason: {e}. Using URL as fallback title.")
             if title is None: title = url
             try:
-                cursor.execute("INSERT OR IGNORE INTO posts (url, title) VALUES (?, ?)", (url, title))
+                cursor.execute("INSERT OR IGNORE INTO posts (url, title, user_uuid) VALUES (?, ?, ?)", (url, title, user_uuid))
                 post_id = cursor.lastrowid if cursor.rowcount > 0 else cursor.execute("SELECT id FROM posts WHERE url = ?", (url,)).fetchone()['id']
                 for tag_id in tag_ids:
                     cursor.execute("INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)", (post_id, int(tag_id)))
                 db.commit()
-            except sqlite3.Error as e:
-                db.rollback()
-                print(f"Database error on post submission: {e}")
-            return redirect(url_for('index'))
-    # ★GETリクエストの場合、カテゴリ化されたタグを渡す
+            except sqlite3.Error as e: db.rollback(); print(f"Database error on post submission: {e}")
+        return redirect(url_for('index'))
     return render_template('new.html', categorized_tags=get_categorized_tags())
 
-# ... (like, favorite, favorites, admin, toggle_visibility, delete_post, edit_title は変更なし) ...
+# --- 投稿者編集API ---
+@app.route('/post/<int:post_id>/details')
+def get_post_details(post_id):
+    db = get_db()
+    cursor = db.cursor()
+    post = cursor.execute("SELECT id, title FROM posts WHERE id = ?", (post_id,)).fetchone()
+    if not post: return jsonify({"success": False, "error": "Post not found"}), 404
+    tags_query = "SELECT tag_id FROM post_tags WHERE post_id = ?"
+    selected_tags = [row['tag_id'] for row in cursor.execute(tags_query, (post_id,)).fetchall()]
+    return jsonify({"success": True, "title": post['title'], "selected_tags": selected_tags})
+
+@app.route('/post/<int:post_id>/edit', methods=['POST'])
+def edit_post(post_id):
+    user_uuid = get_user_uuid()
+    if not request.is_json: return jsonify({"success": False, "error": "Invalid request"}), 400
+    data = request.get_json()
+    new_title = data.get('title', '').strip()
+    new_tag_ids = [int(tag_id) for tag_id in data.get('tags', [])]
+    if not new_title or not new_tag_ids:
+        return jsonify({"success": False, "error": "Title and tags are required"}), 400
+    db = get_db()
+    cursor = db.cursor()
+    post = cursor.execute("SELECT user_uuid FROM posts WHERE id = ?", (post_id,)).fetchone()
+    if not post or post['user_uuid'] != user_uuid:
+        return jsonify({"success": False, "error": "Permission denied"}), 403
+    try:
+        cursor.execute("UPDATE posts SET title = ? WHERE id = ?", (new_title, post_id))
+        cursor.execute("DELETE FROM post_tags WHERE post_id = ?", (post_id,))
+        for tag_id in new_tag_ids:
+            cursor.execute("INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)", (post_id, tag_id))
+        db.commit()
+        return jsonify({"success": True, "message": "Post updated successfully"})
+    except sqlite3.Error as e:
+        db.rollback()
+        return jsonify({"success": False, "error": f"Database error: {e}"}), 500
+
+# --- いいね・お気に入りAPI ---
 @app.route('/like/<int:post_id>', methods=['POST'])
 def like(post_id):
     user_uuid = get_user_uuid()
@@ -160,6 +178,7 @@ def like(post_id):
         liked = False
     likes_count = cursor.execute("SELECT COUNT(*) FROM likes WHERE post_id = ?", (post_id,)).fetchone()[0]
     return jsonify({'success': True, 'liked': liked, 'count': likes_count})
+
 @app.route('/favorite/<int:post_id>', methods=['POST'])
 def favorite(post_id):
     user_uuid = get_user_uuid()
@@ -174,6 +193,7 @@ def favorite(post_id):
         db.commit()
         favorited = False
     return jsonify({'success': True, 'favorited': favorited})
+
 @app.route('/favorites')
 def favorites():
     user_uuid = get_user_uuid()
@@ -195,12 +215,15 @@ def favorites():
     """
     posts = cursor.execute(query, (user_uuid, user_uuid)).fetchall()
     return render_template('favorites.html', posts=posts)
+
+# --- 管理画面 ---
 @app.route('/admin')
 def admin():
     db = get_db()
     cursor = db.cursor()
     posts = cursor.execute("SELECT * FROM posts ORDER BY created_at DESC").fetchall()
     return render_template('admin.html', posts=posts)
+
 @app.route('/admin/toggle_visibility/<int:post_id>', methods=['POST'])
 def toggle_visibility(post_id):
     db = get_db()
@@ -211,20 +234,20 @@ def toggle_visibility(post_id):
         cursor.execute("UPDATE posts SET is_visible = ? WHERE id = ?", (new_status, post_id))
         db.commit()
     return redirect(url_for('admin'))
+
 @app.route('/admin/delete/<int:post_id>', methods=['POST'])
 def delete_post(post_id):
     db = get_db()
     cursor = db.cursor()
     try:
-        cursor.execute("DELETE FROM post_tags WHERE post_id = ?", (post_id,))
-        cursor.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
-        cursor.execute("DELETE FROM favorites WHERE post_id = ?", (post_id,))
+        # ON DELETE CASCADEにより、postsを削除すれば関連データも消える
         cursor.execute("DELETE FROM posts WHERE id = ?", (post_id,))
         db.commit()
     except sqlite3.Error as e: db.rollback(); print(f"Failed to delete post: {e}")
     return redirect(url_for('admin'))
+
 @app.route('/admin/edit_title/<int:post_id>', methods=['POST'])
-def edit_title(post_id):
+def edit_admin_title(post_id):
     if not request.is_json: return jsonify({"success": False, "error": "Invalid request: JSON required"}), 400
     data = request.get_json()
     new_title = data.get('title')
@@ -237,6 +260,11 @@ def edit_title(post_id):
         if cursor.rowcount == 1: return jsonify({"success": True, "new_title": new_title})
         else: return jsonify({"success": False, "error": "Post not found or no change made"}), 404
     except sqlite3.Error as e: return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/tags')
+def api_tags():
+    """カテゴリ化された全タグ情報をJSONで返すAPI"""
+    return jsonify(get_categorized_tags())
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
