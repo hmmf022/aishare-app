@@ -133,3 +133,26 @@ if (window.location.pathname.includes('/admin')) {
     });
 }
 
+// --- アコーディオンUIのロジック ---
+// 共有ページ(/new)の場合のみ実行
+if (window.location.pathname.includes('/new')) {
+    document.querySelectorAll('.accordion-header').forEach(header => {
+        header.addEventListener('click', () => {
+            // クリックされたヘッダーに 'active' クラスを付け外し
+            header.classList.toggle('active');
+
+            const content = header.nextElementSibling;
+
+            // コンテンツの表示/非表示を切り替え
+            if (content.style.maxHeight) {
+                // 閉じる
+                content.style.maxHeight = null;
+                content.style.padding = "0 1.5rem"; // paddingを即時変更
+            } else {
+                // 開く
+                content.style.padding = "0 1.5rem"; // 開く前にpaddingを設定
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
+    });
+}

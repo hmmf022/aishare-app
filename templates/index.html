@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}共有チャット一覧 - {{ super() }}{% endblock %}
+{% block title %}チャット一覧 - {{ super() }}{% endblock %}
 {% block content %}
 <section class="post-list">
     <h2>チャット一覧</h2>
@@ -17,8 +17,14 @@
                 <label for="tag-filter">タグ</label>
                 <select name="tag" id="tag-filter">
                     <option value="">すべて</option>
-                    {% for tag in all_tags %}
-                    <option value="{{ tag.name }}" {% if tag.name == selected_tag %}selected{% endif %}>#{{ tag.name }}</option>
+                    {% for category_data in categorized_tags %}
+                    <optgroup label="{{ category_data.category_name }}">
+                        {% for tag in category_data.tags %}
+                        <option value="{{ tag.name }}" {% if tag.name == selected_tag %}selected{% endif %}>
+                            #{{ tag.name }}
+                        </option>
+                        {% endfor %}
+                    </optgroup>
                     {% endfor %}
                 </select>
             </div>
@@ -36,8 +42,8 @@
                 </div>
             </div>
             <div class="control-group button-group">
-                <button type="submit" class="apply-filters-btn">絞り込み適用</button>
-                <a href="{{ url_for('index') }}" class="clear-filters-btn">リセット</a>
+                <button type="submit" class="btn btn-primary">検索</button>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary small">リセット</a>
             </div>
         </form>
     </div>
@@ -45,26 +51,35 @@
         <table>
             <thead>
                 <tr>
-                    <th class="col-title">タイトル</th><th class="col-tags">タグ</th><th class="col-date">投稿日時</th>
-                    <th class="col-likes">いいね</th><th class="col-actions">アクション</th>
+                    <th class="col-title">タイトル</th>
+                    <th class="col-tags">タグ</th>
+                    <th class="col-date">投稿日時</th>
+                    <th class="col-likes">いいね</th>
+                    <th class="col-actions">アクション</th>
                 </tr>
             </thead>
             <tbody>
                 {% for post in posts %}
                 <tr data-post-id="{{ post.id }}">
-                    <td><a href="{{ post.url }}" target="_blank" rel="noopener noreferrer">{{ post.title }}</a></td>
+                    <td>
+                        <a href="{{ post.url }}" target="_blank" rel="noopener noreferrer">{{ post.title }}</a>
+                    </td>
                     <td class="tags-cell">
                         {% if post.tags %}{% for tag_name in post.tags.split(',') %}<span class="tag">#{{ tag_name }}</span>{% endfor %}{% endif %}
                     </td>
                     <td>{{ post.created_at.split(' ')[0] if post.created_at else '' }}</td>
-                    <td class="likes-cell"><span class="like-count">{{ post.likes_count }}</span></td>
+                    <td class="likes-cell">
+                        <span class="like-count">{{ post.likes_count }}</span>
+                    </td>
                     <td class="actions-cell">
                         <button class="like-btn {% if post.is_liked %}active{% endif %}" data-post-id="{{ post.id }}" title="いいね">{% if post.is_liked %}♥{% else %}♡{% endif %}</button>
                         <button class="favorite-btn {% if post.is_favorited %}active{% endif %}" data-post-id="{{ post.id }}" title="お気に入り">{% if post.is_favorited %}★{% else %}☆{% endif %}</button>
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="no-posts">条件に合うチャットはありません。</td></tr>
+                <tr>
+                    <td colspan="5" class="no-posts">条件に合うチャットはありません。</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>

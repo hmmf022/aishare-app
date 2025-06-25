@@ -30,12 +30,12 @@
 							<button type="submit" class="btn-toggle">{% if post.is_visible %}非表示にする{% else %}表示する{% endif %}</button>
 						</form>
 						<form action="{{ url_for('delete_post', post_id=post.id) }}" method="post" style="display: inline;">
-							<button type="submit" class="btn-delete" onclick="return confirm('この投稿を完全に削除します。よろしいですか？');">削除</button>
+							<button type="submit" class="btn-delete" onclick="return confirm('このチャットを完全に削除します。よろしいですか？');">削除</button>
 						</form>
 					</td>
 				</tr>
 				{% else %}
-				<tr><td colspan="4" class="no-posts">投稿はまだありません。</td></tr>
+				<tr><td colspan="4" class="no-posts">チャットはまだありません。</td></tr>
 				{% endfor %}
 			</tbody>
         </table>
