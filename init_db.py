@@ -6,6 +6,8 @@ DB_PATH = 'data/aishare.db'
 connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
+# (...テーブル作成処理は変更なし...)
+
 # postsテーブル
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS posts (
@@ -57,12 +59,14 @@ CREATE TABLE IF NOT EXISTS favorites (
 )
 ''')
 
+# ★ここを修正します
 # タグの初期データを投入
-initial_tags = ["アイデア出し", "要約", "翻訳", "コード生成", "デバッグ", "文章校正"]
+initial_tags = ["アイデア出し", "要約", "翻訳", "コード生成", "デバッグ", "文章校正", "その他"]
 for tag_name in initial_tags:
+    # "INSERT OR IGNORE" により、既に存在するタグは無視され、新しいタグのみが追加されます
     cursor.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", (tag_name,))
 
 connection.commit()
 connection.close()
 
-print("Database initialized successfully.")
+print("Database initialized or updated successfully.")
