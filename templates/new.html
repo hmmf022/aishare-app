@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}事例を投稿する - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="submission-form">
+    <h2>ナレッジを共有する</h2>
+    <p>共有したいChatGPTなどのチャットURLを貼り付け、関連するタグを選択してください。</p>
+    <form action="{{ url_for('new_post') }}" method="post">
+        <div class="form-group">
+            <label for="url">共有するチャットのURL</label>
+            <input type="url" id="url" name="url" placeholder="https://chat.openai.com/..." required>
+        </div>
+        <div class="form-group">
+            <label>タグを選択 (一つ以上選択してください)</label>
+            <div class="tag-checkboxes">
+                {% for tag in tags %}
+                <label>
+                    <input type="checkbox" name="tags" value="{{ tag.id }}"> #{{ tag.name }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        <button type="submit" class="submit-btn">共有する</button>
+    </form>
+</section>
+{% endblock %}

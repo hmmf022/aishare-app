@@ -15,7 +15,10 @@
                     <input type="search" name="q" placeholder="キーワード検索..." value="{{ search_keyword or '' }}">
                     <button type="submit">検索</button>
                 </form>
+                <!-- ★ここから変更 -->
+                <a href="{{ url_for('new_post') }}" class="nav-button">事例を投稿する</a>
                 <a href="{{ url_for('favorites') }}" class="nav-link">お気に入り一覧</a>
+                <!-- ★ここまで変更 -->
             </nav>
         </div>
     </header>

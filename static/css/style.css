@@ -151,3 +151,19 @@ footer {
     margin-top: 2rem;
     color: #6c757d;
 }
+
+/* --- Header Navigation Button --- */
+.nav-button {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    white-space: nowrap; /* ボタン内のテキストが改行しないように */
+}
+.nav-button:hover {
+    background-color: #0056b3;
+    color: white;
+}
