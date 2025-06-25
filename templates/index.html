@@ -5,32 +5,84 @@
 {% block content %}
 <section class="post-list">
     <h2>事例一覧</h2>
-    <div class="cards">
-        {% for post in posts %}
-        <div class="card" data-post-id="{{ post.id }}">
-            <h3 class="card-title">
-                <a href="{{ post.url }}" target="_blank" rel="noopener noreferrer">{{ post.title }}</a>
-            </h3>
-            <div class="card-tags">
-                {% if post.tags %}
-                    {% for tag_name in post.tags.split(',') %}
-                    <span class="tag">#{{ tag_name }}</span>
+
+    <!-- ★コントロールUIを追加 -->
+    <div class="controls">
+        <form id="filter-sort-form" action="{{ url_for('index') }}" method="get" class="filter-controls">
+            <!-- 検索キーワードを維持するためのhidden input -->
+            <input type="hidden" name="q" value="{{ search_keyword or '' }}">
+
+            <div class="control-group">
+                <label for="tag-filter">タグで絞り込む:</label>
+                <select name="tag" id="tag-filter" onchange="this.form.submit()">
+                    <option value="">すべてのタグ</option>
+                    {% for tag in all_tags %}
+                    <option value="{{ tag.name }}" {% if tag.name == selected_tag %}selected{% endif %}>
+                        #{{ tag.name }}
+                    </option>
                     {% endfor %}
-                {% endif %}
+                </select>
             </div>
-            <div class="card-footer">
-                <div class="actions">
-                    <button class="like-btn {% if post.is_liked %}active{% endif %}" data-post-id="{{ post.id }}">
-                        ♡ <span class="like-count">{{ post.likes_count }}</span>
-                    </button>
-                    <button class="favorite-btn {% if post.is_favorited %}active{% endif %}" data-post-id="{{ post.id }}">☆</button>
-                </div>
-                <time class="post-date">{{ post.created_at.split(' ')[0] if post.created_at else '' }}</time>
+
+            <div class="control-group">
+                <label for="sort-by">並び替え:</label>
+                <select name="sort" id="sort-by" onchange="this.form.submit()">
+                    <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>投稿日時</option>
+                    <option value="likes_count" {% if current_sort == 'likes_count' %}selected{% endif %}>いいね数</option>
+                </select>
+                <select name="order" onchange="this.form.submit()">
+                    <option value="desc" {% if current_order == 'desc' %}selected{% endif %}>新しい順 / 多い順</option>
+                    <option value="asc" {% if current_order == 'asc' %}selected{% endif %}>古い順 / 少ない順</option>
+                </select>
             </div>
-        </div>
-        {% else %}
-        <p>まだ投稿がありません。最初の事例を投稿してみましょう！</p>
-        {% endfor %}
+        </form>
+    </div>
+
+    <!-- ★テーブル形式に変更 -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-title">タイトル</th>
+                    <th class="col-tags">タグ</th>
+                    <th class="col-date">投稿日時</th>
+                    <th class="col-likes">いいね</th>
+                    <th class="col-actions">アクション</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for post in posts %}
+                <tr data-post-id="{{ post.id }}">
+                    <td>
+                        <a href="{{ post.url }}" target="_blank" rel="noopener noreferrer">{{ post.title }}</a>
+                    </td>
+                    <td class="tags-cell">
+                        {% if post.tags %}
+                            {% for tag_name in post.tags.split(',') %}
+                            <span class="tag">#{{ tag_name }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </td>
+                    <td>{{ post.created_at.split(' ')[0] if post.created_at else '' }}</td>
+                    <td class="likes-cell">
+                        <span class="like-count">{{ post.likes_count }}</span>
+                    </td>
+                    <td class="actions-cell">
+						<button class="like-btn {% if post.is_liked %}active{% endif %}" data-post-id="{{ post.id }}" title="いいね">
+							{% if post.is_liked %}♥{% else %}♡{% endif %}
+						</button>
+						<button class="favorite-btn {% if post.is_favorited %}active{% endif %}" data-post-id="{{ post.id }}" title="お気に入り">
+							{% if post.is_favorited %}★{% else %}☆{% endif %}
+						</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="no-posts">条件に合う事例はありません。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </section>
 {% endblock %}

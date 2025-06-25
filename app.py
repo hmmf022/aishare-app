@@ -46,9 +46,24 @@ def index():
     db = get_db()
     cursor = db.cursor()
     user_uuid = get_user_uuid()
-    search_keyword = request.args.get('q', '')
 
-    query = """
+    # --- フィルタリングとソートのためのパラメータを取得 ---
+    search_keyword = request.args.get('q', '')
+    selected_tag = request.args.get('tag', '')
+    sort_by = request.args.get('sort', 'created_at')
+    order = request.args.get('order', 'desc')
+
+    # --- SQLインジェクション対策: パラメータを検証 ---
+    # sort_by は許可されたカラム名のみ、order は 'asc' or 'desc' のみ許可
+    if sort_by not in ['created_at', 'likes_count']:
+        sort_by = 'created_at'
+    if order.lower() not in ['asc', 'desc']:
+        order = 'desc'
+
+    # --- SQLクエリの組み立て ---
+    params = [user_uuid, user_uuid]
+
+    base_query = f"""
         WITH PostWithTags AS (
             SELECT
                 p.id,
@@ -66,13 +81,35 @@ def index():
             (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_uuid = ?) > 0 AS is_liked
         FROM posts p
         LEFT JOIN PostWithTags pwt ON p.id = pwt.id
-        WHERE p.title LIKE ? OR (pwt.tags IS NOT NULL AND pwt.tags LIKE ?)
-        ORDER BY p.created_at DESC
     """
 
-    posts = cursor.execute(query, (user_uuid, user_uuid, f'%{search_keyword}%', f'%{search_keyword}%')).fetchall()
+    where_clauses = []
+    # キーワード検索
+    if search_keyword:
+        where_clauses.append("(p.title LIKE ? OR (pwt.tags IS NOT NULL AND pwt.tags LIKE ?))")
+        params.extend([f'%{search_keyword}%', f'%{search_keyword}%'])
 
-    return render_template('index.html', posts=posts, search_keyword=search_keyword)
+    # タグ絞り込み
+    if selected_tag:
+        where_clauses.append("(pwt.tags IS NOT NULL AND pwt.tags LIKE ?)")
+        params.append(f'%{selected_tag}%')
+
+    if where_clauses:
+        base_query += " WHERE " + " AND ".join(where_clauses)
+
+    # ORDER BY 句を動的に設定
+    base_query += f" ORDER BY {sort_by} {order}"
+
+    posts = cursor.execute(base_query, tuple(params)).fetchall()
+    all_tags = cursor.execute("SELECT * FROM tags ORDER BY name").fetchall()
+
+    return render_template('index.html',
+                           posts=posts,
+                           all_tags=all_tags,
+                           search_keyword=search_keyword,
+                           current_sort=sort_by,
+                           current_order=order,
+                           selected_tag=selected_tag)
 
 # ★ 2. 事例投稿ページ (新規追加)
 @app.route('/new', methods=['GET', 'POST'])

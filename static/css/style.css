@@ -130,19 +130,6 @@ header nav {
     align-items: center;
     color: #6c757d;
 }
-.actions button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2rem;
-    color: #adb5bd;
-}
-.actions button.active {
-    color: #ff4757; /* Active color */
-}
-.actions .favorite-btn.active {
-    color: #feca57; /* Favorite active color */
-}
 
 /* Footer */
 footer {
@@ -166,4 +153,122 @@ footer {
 .nav-button:hover {
     background-color: #0056b3;
     color: white;
+}
+
+/* --- コントロールUIのスタイル --- */
+.controls {
+    background-color: #f1f3f5;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #dee2e6;
+}
+.filter-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+}
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.control-group label {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+.control-group select {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+/* --- テーブルのスタイル --- */
+.table-container {
+    overflow-x: auto; /* 横幅が狭い画面でもテーブルが見切れないように */
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+th, td {
+    padding: 0.8rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+thead th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+tbody tr:hover {
+    background-color: #f1f3f5;
+}
+td a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
+}
+td a:hover {
+    text-decoration: underline;
+}
+.tags-cell .tag {
+    margin-bottom: 0.3rem;
+}
+.likes-cell, .actions-cell {
+    text-align: center;
+}
+.actions-cell {
+    white-space: nowrap; /* ボタンが改行しないように */
+}
+.actions-cell .like-btn {
+    padding-right: 0.5rem;
+}
+.no-posts {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+/* --- カラム幅の調整 --- */
+.col-title { width: 45%; }
+.col-tags { width: 25%; }
+.col-date { width: 12%; }
+.col-likes { width: 8%; }
+.col-actions { width: 10%; }
+
+/* --- 元のカードCSSを削除またはコメントアウト --- */
+/* .cards, .card, .card-footer など、カード関連のスタイルは不要になります */
+/* 今回はそのまま残しても問題ありませんが、整理のために削除を推奨します */
+
+/* --- アクションボタンのスタイルを改善 --- */
+.actions-cell button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.5rem; /* アイコンを見やすく */
+    color: #adb5bd; /* デフォルトの色（グレー） */
+    padding: 0 0.2rem;
+    line-height: 1;
+    vertical-align: middle;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.actions-cell button:hover {
+    transform: scale(1.2); /* ホバー時に少し大きくするアニメーション */
+}
+
+/* いいねボタンのアクティブ状態 (赤色) */
+.actions-cell .like-btn.active {
+    color: #e52b50;
+}
+
+/* お気に入りボタンのアクティブ状態 (黄色) */
+.actions-cell .favorite-btn.active {
+    color: #ffc107;
 }
