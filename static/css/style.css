@@ -119,3 +119,37 @@ td a:hover { text-decoration: underline; }
     color: #ffc107; /* お気に入りONの色 (黄) */
 }
 
+/* --- 管理画面のスタイル --- */
+.status-visible {
+    color: #28a745;
+    font-weight: bold;
+}
+.status-hidden {
+    color: #dc3545;
+    font-weight: bold;
+}
+.hidden-row {
+    background-color: #f8f9fa;
+    opacity: 0.7;
+}
+.hidden-row td {
+    color: #6c757d;
+}
+.btn-toggle, .btn-delete {
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    border: 1px solid;
+    margin: 0 0.2rem;
+}
+.btn-toggle {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+.btn-delete {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}

@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, g
 app = Flask(__name__)
 DATABASE = 'data/aishare.db'
 
-# --- データベース接続 ---
+# --- データベース接続 (変更なし) ---
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -21,7 +21,7 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-# --- ユーザーID管理 ---
+# --- ユーザーID管理 (変更なし) ---
 @app.before_request
 def manage_user_uuid():
     if 'user_uuid' not in request.cookies:
@@ -40,8 +40,10 @@ def get_user_uuid():
 
 # --- ルート定義 ---
 
+# ★【変更】is_visible=1の投稿のみ表示するように修正
 @app.route('/')
 def index():
+    # ... (この関数のロジックは長いので、下でまとめて示します) ...
     db = get_db()
     cursor = db.cursor()
     user_uuid = get_user_uuid()
@@ -51,13 +53,27 @@ def index():
     sort_by = request.args.get('sort', 'created_at')
     order = request.args.get('order', 'desc')
 
-    if sort_by not in ['created_at', 'likes_count']:
-        sort_by = 'created_at'
-    if order.lower() not in ['asc', 'desc']:
-        order = 'desc'
+    if sort_by not in ['created_at', 'likes_count']: sort_by = 'created_at'
+    if order.lower() not in ['asc', 'desc']: order = 'desc'
 
     params = [user_uuid, user_uuid]
     base_query = f"""
+        WITH PostWithTags AS ( ... )
+        SELECT ...
+        FROM posts p
+        LEFT JOIN PostWithTags pwt ON p.id = pwt.id
+    """
+    # ★【変更箇所】 WHERE句に is_visible = 1 を追加
+    where_clauses = ["p.is_visible = 1"]
+    if search_keyword:
+        where_clauses.append("(p.title LIKE ? OR (pwt.tags IS NOT NULL AND pwt.tags LIKE ?))")
+        params.extend([f'%{search_keyword}%', f'%{search_keyword}%'])
+    if selected_tag:
+        where_clauses.append("(pwt.tags IS NOT NULL AND pwt.tags LIKE ?)")
+        params.append(f'%{selected_tag}%')
+
+    # base_queryのWITH句とSELECT句は省略せずに記述
+    full_base_query = f"""
         WITH PostWithTags AS (
             SELECT p.id, GROUP_CONCAT(t.name) as tags
             FROM posts p
@@ -66,26 +82,17 @@ def index():
             GROUP BY p.id
         )
         SELECT
-            p.id, p.url, p.title, p.created_at, pwt.tags,
+            p.id, p.url, p.title, p.created_at, p.is_visible, pwt.tags,
             (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likes_count,
             (SELECT COUNT(*) FROM favorites WHERE post_id = p.id AND user_uuid = ?) > 0 AS is_favorited,
             (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_uuid = ?) > 0 AS is_liked
         FROM posts p
         LEFT JOIN PostWithTags pwt ON p.id = pwt.id
     """
-    where_clauses = []
-    if search_keyword:
-        where_clauses.append("(p.title LIKE ? OR (pwt.tags IS NOT NULL AND pwt.tags LIKE ?))")
-        params.extend([f'%{search_keyword}%', f'%{search_keyword}%'])
-    if selected_tag:
-        where_clauses.append("(pwt.tags IS NOT NULL AND pwt.tags LIKE ?)")
-        params.append(f'%{selected_tag}%')
 
-    if where_clauses:
-        base_query += " WHERE " + " AND ".join(where_clauses)
-    base_query += f" ORDER BY {sort_by} {order}"
+    full_query = full_base_query + " WHERE " + " AND ".join(where_clauses) + f" ORDER BY {sort_by} {order}"
 
-    posts = cursor.execute(base_query, tuple(params)).fetchall()
+    posts = cursor.execute(full_query, tuple(params)).fetchall()
     all_tags = cursor.execute("SELECT * FROM tags ORDER BY name").fetchall()
 
     return render_template('index.html',
@@ -93,8 +100,10 @@ def index():
                            search_keyword=search_keyword, current_sort=sort_by,
                            current_order=order, selected_tag=selected_tag)
 
+
 @app.route('/new', methods=['GET', 'POST'])
 def new_post():
+    # ... (この関数は変更なし) ...
     db = get_db()
     cursor = db.cursor()
     if request.method == 'POST':
@@ -119,10 +128,11 @@ def new_post():
             except sqlite3.Error as e:
                 print(f"Database error: {e}")
             return redirect(url_for('index'))
-
     tags = cursor.execute("SELECT * FROM tags").fetchall()
     return render_template('new.html', tags=tags)
 
+
+# ... (like, favorite関数は変更なし) ...
 @app.route('/like/<int:post_id>', methods=['POST'])
 def like(post_id):
     user_uuid = get_user_uuid()
@@ -154,11 +164,13 @@ def favorite(post_id):
         favorited = False
     return jsonify({'success': True, 'favorited': favorited})
 
+# ★【変更】is_visible=1の投稿のみ表示するように修正
 @app.route('/favorites')
 def favorites():
     user_uuid = get_user_uuid()
     db = get_db()
     cursor = db.cursor()
+    # ★【変更箇所】 p.is_visible = 1 を追加
     query = """
         SELECT
             p.id, p.url, p.title, p.created_at,
@@ -170,11 +182,50 @@ def favorites():
         JOIN post_tags pt ON p.id = pt.post_id
         JOIN tags t ON pt.tag_id = t.id
         JOIN favorites f ON p.id = f.post_id
-        WHERE f.user_uuid = ?
+        WHERE f.user_uuid = ? AND p.is_visible = 1
         GROUP BY p.id ORDER BY f.id DESC
     """
     posts = cursor.execute(query, (user_uuid, user_uuid)).fetchall()
     return render_template('favorites.html', posts=posts)
+
+
+# --- ★【新規追加】ここから管理画面用の機能 ---
+
+@app.route('/admin')
+def admin():
+    db = get_db()
+    cursor = db.cursor()
+    # is_visibleに関わらず全ての投稿を取得
+    posts = cursor.execute("SELECT * FROM posts ORDER BY created_at DESC").fetchall()
+    return render_template('admin.html', posts=posts)
+
+@app.route('/admin/toggle_visibility/<int:post_id>', methods=['POST'])
+def toggle_visibility(post_id):
+    db = get_db()
+    cursor = db.cursor()
+    # 現在の状態を取得して反転させる
+    current_status = cursor.execute("SELECT is_visible FROM posts WHERE id = ?", (post_id,)).fetchone()
+    if current_status:
+        new_status = 0 if current_status['is_visible'] == 1 else 1
+        cursor.execute("UPDATE posts SET is_visible = ? WHERE id = ?", (new_status, post_id))
+        db.commit()
+    return redirect(url_for('admin'))
+
+@app.route('/admin/delete/<int:post_id>', methods=['POST'])
+def delete_post(post_id):
+    db = get_db()
+    cursor = db.cursor()
+    # 関連するデータを全て削除（トランザクション内で実行）
+    try:
+        cursor.execute("DELETE FROM post_tags WHERE post_id = ?", (post_id,))
+        cursor.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
+        cursor.execute("DELETE FROM favorites WHERE post_id = ?", (post_id,))
+        cursor.execute("DELETE FROM posts WHERE id = ?", (post_id,))
+        db.commit()
+    except sqlite3.Error as e:
+        db.rollback()
+        print(f"Failed to delete post: {e}")
+    return redirect(url_for('admin'))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
