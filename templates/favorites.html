@@ -12,14 +12,14 @@
             </div>
             <div class="card-footer">
                 <div class="actions">
-                    <button class="like-btn {% if post.is_liked %}active{% endif %}" data-post-id="{{ post.id }}" title="いいね">{% if post.is_liked %}♥{% else %}♡{% endif %}<span class="like-count">{{ post.likes_count }}</span></button>
+                    <button class="like-btn {% if post.is_liked %}active{% endif %}" data-post-id="{{ post.id }}" title="いいね">{% if post.is_liked %}♥{% else %}♡{% endif %}</button>
                     <button class="favorite-btn active" data-post-id="{{ post.id }}" title="お気に入り解除">★</button>
                 </div>
                 <time class="post-date">{{ post.created_at.split(' ')[0] if post.created_at else '' }}</time>
             </div>
         </div>
         {% else %}
-        <p class="no-posts-card">お気に入り登録された事例はありません。</p>
+        <p class="no-posts-card">お気に入り登録されたナレッジはありません。</p>
         {% endfor %}
     </div>
 </section>

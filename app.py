@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, g
 app = Flask(__name__)
 DATABASE = 'data/aishare.db'
 
-# --- データベース接続 (変更なし) ---
+# --- データベース接続 ---
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -21,7 +21,7 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-# --- ユーザーID管理 (変更なし) ---
+# --- ユーザーID管理 ---
 @app.before_request
 def manage_user_uuid():
     if 'user_uuid' not in request.cookies:
@@ -40,15 +40,14 @@ def get_user_uuid():
 
 # --- ルート定義 ---
 
-# ★【変更】is_visible=1の投稿のみ表示するように修正
 @app.route('/')
 def index():
-    # ... (この関数のロジックは長いので、下でまとめて示します) ...
     db = get_db()
     cursor = db.cursor()
     user_uuid = get_user_uuid()
 
     search_keyword = request.args.get('q', '')
+    selected_date = request.args.get('date', '')
     selected_tag = request.args.get('tag', '')
     sort_by = request.args.get('sort', 'created_at')
     order = request.args.get('order', 'desc')
@@ -57,23 +56,7 @@ def index():
     if order.lower() not in ['asc', 'desc']: order = 'desc'
 
     params = [user_uuid, user_uuid]
-    base_query = f"""
-        WITH PostWithTags AS ( ... )
-        SELECT ...
-        FROM posts p
-        LEFT JOIN PostWithTags pwt ON p.id = pwt.id
-    """
-    # ★【変更箇所】 WHERE句に is_visible = 1 を追加
-    where_clauses = ["p.is_visible = 1"]
-    if search_keyword:
-        where_clauses.append("(p.title LIKE ? OR (pwt.tags IS NOT NULL AND pwt.tags LIKE ?))")
-        params.extend([f'%{search_keyword}%', f'%{search_keyword}%'])
-    if selected_tag:
-        where_clauses.append("(pwt.tags IS NOT NULL AND pwt.tags LIKE ?)")
-        params.append(f'%{selected_tag}%')
-
-    # base_queryのWITH句とSELECT句は省略せずに記述
-    full_base_query = f"""
+    base_query = """
         WITH PostWithTags AS (
             SELECT p.id, GROUP_CONCAT(t.name) as tags
             FROM posts p
@@ -90,49 +73,80 @@ def index():
         LEFT JOIN PostWithTags pwt ON p.id = pwt.id
     """
 
-    full_query = full_base_query + " WHERE " + " AND ".join(where_clauses) + f" ORDER BY {sort_by} {order}"
+    where_clauses = ["p.is_visible = 1"]
+    if search_keyword:
+        where_clauses.append("(p.title LIKE ? OR (pwt.tags IS NOT NULL AND pwt.tags LIKE ?))")
+        params.extend([f'%{search_keyword}%', f'%{search_keyword}%'])
+    if selected_date:
+        where_clauses.append("DATE(p.created_at) = ?")
+        params.append(selected_date)
+    if selected_tag:
+        where_clauses.append("(pwt.tags IS NOT NULL AND pwt.tags LIKE ?)")
+        params.append(f'%{selected_tag}%')
 
-    posts = cursor.execute(full_query, tuple(params)).fetchall()
+    if where_clauses:
+        base_query += " WHERE " + " AND ".join(where_clauses)
+    base_query += f" ORDER BY {sort_by} {order}"
+
+    posts = cursor.execute(base_query, tuple(params)).fetchall()
     all_tags = cursor.execute("SELECT * FROM tags ORDER BY name").fetchall()
 
     return render_template('index.html',
                            posts=posts, all_tags=all_tags,
-                           search_keyword=search_keyword, current_sort=sort_by,
-                           current_order=order, selected_tag=selected_tag)
-
+                           search_keyword=search_keyword, selected_date=selected_date,
+                           selected_tag=selected_tag, current_sort=sort_by, current_order=order)
 
 @app.route('/new', methods=['GET', 'POST'])
 def new_post():
-    # ... (この関数は変更なし) ...
     db = get_db()
     cursor = db.cursor()
     if request.method == 'POST':
         url = request.form.get('url')
         tag_ids = request.form.getlist('tags')
         if url and tag_ids:
+            title = None # title変数を初期化
             try:
-                headers = {'User-Agent': 'Mozilla/5.0'}
+                # ブラウザからのアクセスを偽装するヘッダー
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                }
                 res = requests.get(url, timeout=5, headers=headers)
+                # 4xx, 5xxエラーの場合はここで例外が発生する
                 res.raise_for_status()
-                soup = BeautifulSoup(res.content, 'html.parser')
-                title = soup.title.string.strip() if soup.title else "タイトルなし"
 
+                soup = BeautifulSoup(res.content, 'html.parser')
+                # <title>タグがあればその内容を、なければNoneのまま
+                if soup.title and soup.title.string:
+                    title = soup.title.string.strip()
+
+            except requests.exceptions.RequestException as e:
+                # タイムアウト、接続エラー、4xx/5xxエラーなど、リクエストに関するあらゆるエラーをここで捕捉
+                print(f"[Info] Could not fetch title for '{url}'. Reason: {e}. Using URL as fallback title.")
+
+            # ★【ここからがフォールバック処理】
+            # tryブロックでtitleが取得できなかった場合（Noneのままの場合）、URLをタイトルとして使用する
+            if title is None:
+                title = url
+
+            # データベースへの登録処理
+            try:
                 cursor.execute("INSERT OR IGNORE INTO posts (url, title) VALUES (?, ?)", (url, title))
+                # 既存URLの場合はIDを取得、新規の場合はlastrowidを取得
                 post_id = cursor.lastrowid if cursor.rowcount > 0 else cursor.execute("SELECT id FROM posts WHERE url = ?", (url,)).fetchone()['id']
 
                 for tag_id in tag_ids:
                     cursor.execute("INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)", (post_id, int(tag_id)))
                 db.commit()
-            except requests.exceptions.RequestException as e:
-                print(f"Error fetching URL: {e}")
             except sqlite3.Error as e:
-                print(f"Database error: {e}")
+                db.rollback() # エラー時はロールバック
+                print(f"Database error on post submission: {e}")
+
             return redirect(url_for('index'))
+
+    # GETリクエストの場合
     tags = cursor.execute("SELECT * FROM tags").fetchall()
     return render_template('new.html', tags=tags)
 
-
-# ... (like, favorite関数は変更なし) ...
 @app.route('/like/<int:post_id>', methods=['POST'])
 def like(post_id):
     user_uuid = get_user_uuid()
@@ -164,13 +178,11 @@ def favorite(post_id):
         favorited = False
     return jsonify({'success': True, 'favorited': favorited})
 
-# ★【変更】is_visible=1の投稿のみ表示するように修正
 @app.route('/favorites')
 def favorites():
     user_uuid = get_user_uuid()
     db = get_db()
     cursor = db.cursor()
-    # ★【変更箇所】 p.is_visible = 1 を追加
     query = """
         SELECT
             p.id, p.url, p.title, p.created_at,
@@ -188,14 +200,10 @@ def favorites():
     posts = cursor.execute(query, (user_uuid, user_uuid)).fetchall()
     return render_template('favorites.html', posts=posts)
 
-
-# --- ★【新規追加】ここから管理画面用の機能 ---
-
 @app.route('/admin')
 def admin():
     db = get_db()
     cursor = db.cursor()
-    # is_visibleに関わらず全ての投稿を取得
     posts = cursor.execute("SELECT * FROM posts ORDER BY created_at DESC").fetchall()
     return render_template('admin.html', posts=posts)
 
@@ -203,7 +211,6 @@ def admin():
 def toggle_visibility(post_id):
     db = get_db()
     cursor = db.cursor()
-    # 現在の状態を取得して反転させる
     current_status = cursor.execute("SELECT is_visible FROM posts WHERE id = ?", (post_id,)).fetchone()
     if current_status:
         new_status = 0 if current_status['is_visible'] == 1 else 1
@@ -215,7 +222,6 @@ def toggle_visibility(post_id):
 def delete_post(post_id):
     db = get_db()
     cursor = db.cursor()
-    # 関連するデータを全て削除（トランザクション内で実行）
     try:
         cursor.execute("DELETE FROM post_tags WHERE post_id = ?", (post_id,))
         cursor.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
@@ -226,6 +232,33 @@ def delete_post(post_id):
         db.rollback()
         print(f"Failed to delete post: {e}")
     return redirect(url_for('admin'))
+
+@app.route('/admin/edit_title/<int:post_id>', methods=['POST'])
+def edit_title(post_id):
+    # リクエストがJSON形式かチェック
+    if not request.is_json:
+        return jsonify({"success": False, "error": "Invalid request: JSON required"}), 400
+
+    data = request.get_json()
+    new_title = data.get('title')
+
+    if not new_title:
+        return jsonify({"success": False, "error": "New title cannot be empty"}), 400
+
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("UPDATE posts SET title = ? WHERE id = ?", (new_title, post_id))
+        db.commit()
+
+        # 影響を受けた行が1行であれば成功
+        if cursor.rowcount == 1:
+            return jsonify({"success": True, "new_title": new_title})
+        else:
+            return jsonify({"success": False, "error": "Post not found or no change made"}), 404
+
+    except sqlite3.Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

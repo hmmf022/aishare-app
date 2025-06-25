@@ -1,18 +1,21 @@
 {% extends 'base.html' %}
-{% block title %}ナレッジ一覧 - {{ super() }}{% endblock %}
+{% block title %}共有チャット一覧 - {{ super() }}{% endblock %}
 {% block content %}
 <section class="post-list">
-    <h2>ナレッジ一覧</h2>
+    <h2>チャット一覧</h2>
     <div class="controls">
         <form id="filter-sort-form" action="{{ url_for('index') }}" method="get" class="filter-controls">
             <div class="control-group search-group">
-                <label for="search-keyword">キーワード:</label>
+                <label for="search-keyword">キーワード</label>
                 <input type="search" id="search-keyword" name="q" placeholder="タイトル, タグ..." value="{{ search_keyword or '' }}">
-                <button type="submit">検索</button>
             </div>
             <div class="control-group">
-                <label for="tag-filter">タグ:</label>
-                <select name="tag" id="tag-filter" onchange="this.form.submit()">
+                <label for="date-filter">投稿日</label>
+                <input type="date" id="date-filter" name="date" value="{{ selected_date or '' }}">
+            </div>
+            <div class="control-group">
+                <label for="tag-filter">タグ</label>
+                <select name="tag" id="tag-filter">
                     <option value="">すべて</option>
                     {% for tag in all_tags %}
                     <option value="{{ tag.name }}" {% if tag.name == selected_tag %}selected{% endif %}>#{{ tag.name }}</option>
@@ -20,15 +23,21 @@
                 </select>
             </div>
             <div class="control-group">
-                <label for="sort-by">並び替え:</label>
-                <select name="sort" id="sort-by" onchange="this.form.submit()">
-                    <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>投稿日時</option>
-                    <option value="likes_count" {% if current_sort == 'likes_count' %}selected{% endif %}>いいね数</option>
-                </select>
-                <select name="order" onchange="this.form.submit()">
-                    <option value="desc" {% if current_order == 'desc' %}selected{% endif %}>新しい順 / 多い順</option>
-                    <option value="asc" {% if current_order == 'asc' %}selected{% endif %}>古い順 / 少ない順</option>
-                </select>
+                <label for="sort-by">並び替え</label>
+                <div class="sort-group">
+                    <select name="sort" id="sort-by">
+                        <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>投稿日時</option>
+                        <option value="likes_count" {% if current_sort == 'likes_count' %}selected{% endif %}>いいね数</option>
+                    </select>
+                    <select name="order">
+                        <option value="desc" {% if current_order == 'desc' %}selected{% endif %}>新しい順 / 多い順</option>
+                        <option value="asc" {% if current_order == 'asc' %}selected{% endif %}>古い順 / 少ない順</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-group button-group">
+                <button type="submit" class="apply-filters-btn">絞り込み適用</button>
+                <a href="{{ url_for('index') }}" class="clear-filters-btn">リセット</a>
             </div>
         </form>
     </div>
@@ -36,11 +45,8 @@
         <table>
             <thead>
                 <tr>
-                    <th class="col-title">タイトル</th>
-                    <th class="col-tags">タグ</th>
-                    <th class="col-date">投稿日時</th>
-                    <th class="col-likes">いいね</th>
-                    <th class="col-actions">アクション</th>
+                    <th class="col-title">タイトル</th><th class="col-tags">タグ</th><th class="col-date">投稿日時</th>
+                    <th class="col-likes">いいね</th><th class="col-actions">アクション</th>
                 </tr>
             </thead>
             <tbody>
@@ -58,7 +64,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="no-posts">条件に合う事例はありません。</td></tr>
+                <tr><td colspan="5" class="no-posts">条件に合うナレッジはありません。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

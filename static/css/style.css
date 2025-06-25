@@ -1,14 +1,12 @@
 :root {
-    --primary-color: #007bff;
-    --border-color: #dee2e6;
-    --background-color: #f8f9fa;
-    --card-bg: #fff;
+    --primary-color: #007bff; --border-color: #dee2e6;
+    --background-color: #f8f9fa; --card-bg: #fff;
 }
 body {
     font-family: sans-serif; line-height: 1.6;
     background-color: var(--background-color); color: #333; margin: 0;
 }
-.container { max-width: 960px; margin: 0 auto; padding: 0 1rem; }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
 header {
     background-color: var(--card-bg); padding: 1rem 0;
     border-bottom: 1px solid var(--border-color); margin-bottom: 2rem;
@@ -23,36 +21,25 @@ header nav { display: flex; align-items: center; gap: 1rem; }
     transition: background-color 0.2s; white-space: nowrap;
 }
 .nav-button:hover { background-color: #0056b3; color: white; }
-main .post-list h2, main .submission-form h2 { margin-bottom: 1.5rem; }
+main section h2 { margin-top: 0; margin-bottom: 1.5rem; }
 footer { text-align: center; padding: 2rem 0; margin-top: 2rem; color: #6c757d; }
-
-/* --- 投稿フォーム --- */
-.submission-form { background-color: var(--card-bg); padding: 2rem; border-radius: 8px; border: 1px solid var(--border-color); }
+.submission-form { background-color: var(--card-bg); padding: 2rem; border-radius: 8px; border: 1px solid var(--border-color); max-width: 800px; margin: 0 auto; }
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
 .form-group input[type="url"] { width: 100%; padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; }
 .tag-checkboxes { display: flex; flex-wrap: wrap; gap: 1rem; }
-.submit-btn {
-    background-color: var(--primary-color); color: white; padding: 0.8rem 1.5rem;
-    border: none; border-radius: 4px; cursor: pointer; font-size: 1rem;
-}
-
-/* --- コントロールUI --- */
-.controls { margin-bottom: 1.5rem; }
-.filter-controls {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem;
-    background-color: #f1f3f5; padding: 1rem; border-radius: 8px; border: 1px solid #dee2e6;
-}
-.control-group { display: flex; align-items: center; gap: 0.5rem; }
-.control-group label { font-weight: bold; font-size: 0.9rem; white-space: nowrap; }
-.control-group select, .control-group input[type="search"] { padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; background-color: #fff; }
-.control-group button {
-    padding: 0.5rem 1rem; border: 1px solid var(--primary-color);
-    background-color: var(--primary-color); color: white; border-radius: 4px; cursor: pointer;
-}
-.search-group { flex-grow: 1; }
-
-/* --- テーブル --- */
+.submit-btn { background-color: var(--primary-color); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+.controls { margin-bottom: 1.5rem; background-color: #f1f3f5; padding: 1rem; border-radius: 8px; border: 1px solid #dee2e6; }
+.filter-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem; }
+.control-group { display: flex; flex-direction: column; }
+.control-group label { margin-bottom: 0.4rem; font-size: 0.85rem; font-weight: bold; color: #495057; }
+.control-group input, .control-group select { padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+.search-group { flex: 2 1 250px; }
+.sort-group { display: flex; gap: 0.5rem; }
+.button-group { flex-direction: row; align-items-center; gap: 0.5rem; margin-left: auto; }
+.apply-filters-btn, .clear-filters-btn { padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-block; }
+.apply-filters-btn { background-color: var(--primary-color); color: white; border: 1px solid var(--primary-color); }
+.clear-filters-btn { background-color: #6c757d; color: white; border: 1px solid #6c757d; }
 .table-container { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; background-color: var(--card-bg); border: 1px solid var(--border-color); }
 th, td { padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
@@ -60,96 +47,56 @@ thead th { background-color: #f8f9fa; font-weight: bold; }
 tbody tr:hover { background-color: #f1f3f5; }
 td a { color: var(--primary-color); text-decoration: none; font-weight: bold; }
 td a:hover { text-decoration: underline; }
-.tag {
-    background-color: #e9ecef; color: #495057; padding: 0.2rem 0.5rem;
-    border-radius: 4px; font-size: 0.8rem; display: inline-block; margin-right: 0.5rem;
-}
+.tag { background-color: #e9ecef; color: #495057; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; display: inline-block; margin-right: 0.5rem; }
 .tags-cell .tag { margin-bottom: 0.3rem; }
 .likes-cell, .actions-cell { text-align: center; }
 .actions-cell { white-space: nowrap; }
 .no-posts { text-align: center; padding: 3rem; color: #6c757d; }
-.col-title { width: 45%; } .col-tags { width: 25%; } .col-date { width: 12%; }
-.col-likes { width: 8%; } .col-actions { width: 10%; }
-
-/* --- カード --- */
+.col-title { width: 45%; } .col-tags { width: 25%; } .col-date { width: 12%; } .col-likes { width: 8%; } .col-actions { width: 10%; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
-.card {
-    background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px;
-    padding: 1.5rem; display: flex; flex-direction: column; transition: box-shadow 0.2s;
-}
+.card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; display: flex; flex-direction: column; transition: box-shadow 0.2s; }
 .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 .card-title { margin: 0 0 1rem 0; }
 .card-title a { color: #333; font-weight: 600; }
 .card-tags { margin-bottom: 1rem; }
 .card-tags .tag { margin-bottom: 0.5rem; }
-.card-footer {
-    margin-top: auto; padding-top: 1rem; border-top: 1px solid #f1f3f5;
-    display: flex; justify-content: space-between; align-items: center;
-    color: #6c757d; font-size: 0.9rem;
-}
+.card-footer { margin-top: auto; padding-top: 1rem; border-top: 1px solid #f1f3f5; display: flex; justify-content: space-between; align-items: center; color: #6c757d; font-size: 0.9rem; }
 .card-footer .actions { display: flex; align-items: center; gap: 0.5rem; }
 .card-footer .like-count { font-size: 1rem; color: #6c757d; margin-left: 0.2rem; vertical-align: middle; }
-.no-posts-card {
-    grid-column: 1 / -1; text-align: center; padding: 3rem; color: #6c757d;
-    background-color: #fff; border: 1px dashed #ddd; border-radius: 8px;
-}
-
-/* --- アクションボタン (共通) --- */
-.actions-cell button, .card-footer .actions button {
-    background: none; border: none; cursor: pointer; font-size: 1.5rem; color: #adb5bd;
-    padding: 0 0.2rem; line-height: 1; vertical-align: middle; transition: color 0.2s, transform 0.2s;
-}
+.no-posts-card { grid-column: 1 / -1; text-align: center; padding: 3rem; color: #6c757d; background-color: #fff; border: 1px dashed #ddd; border-radius: 8px; }
+.actions-cell button, .card-footer .actions button { background: none; border: none; cursor: pointer; font-size: 1.5rem; color: #adb5bd; padding: 0 0.2rem; line-height: 1; vertical-align: middle; transition: color 0.2s, transform 0.2s; }
 .actions-cell button:hover, .card-footer .actions button:hover { transform: scale(1.2); }
-.like-btn.active { color: #e52b50; }
-.favorite-btn.active { color: #ffc107; }
+.actions-cell .like-btn.active, .card-footer .actions .like-btn.active { color: #e52b50; }
+.actions-cell .favorite-btn.active, .card-footer .actions .favorite-btn.active { color: #ffc107; }
+.status-visible { color: #28a745; font-weight: bold; }
+.status-hidden { color: #dc3545; font-weight: bold; }
+.hidden-row { background-color: #f8f9fa; opacity: 0.7; }
+.hidden-row td { color: #6c757d; }
+.btn-toggle, .btn-delete { padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer; font-weight: bold; border: 1px solid; margin: 0 0.2rem; }
+.btn-toggle { background-color: #ffc107; border-color: #ffc107; color: #212529; }
+.btn-delete { background-color: #dc3545; border-color: #dc3545; color: white; }
 
-/*
-  共通のルールに加え、カードフッター内のボタンにも
-  色指定を明確に適用するためのルールを追加します。
-  これにより、CSSの詳細度（Specificity）の問題を解決します。
-*/
-
-.actions-cell .like-btn.active,
-.card-footer .actions .like-btn.active {
-    color: #e52b50; /* いいねONの色 (赤) */
-}
-
-.actions-cell .favorite-btn.active,
-.card-footer .actions .favorite-btn.active {
-    color: #ffc107; /* お気に入りONの色 (黄) */
-}
-
-/* --- 管理画面のスタイル --- */
-.status-visible {
-    color: #28a745;
-    font-weight: bold;
-}
-.status-hidden {
-    color: #dc3545;
-    font-weight: bold;
-}
-.hidden-row {
-    background-color: #f8f9fa;
-    opacity: 0.7;
-}
-.hidden-row td {
-    color: #6c757d;
-}
-.btn-toggle, .btn-delete {
-    padding: 0.3rem 0.8rem;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    border: 1px solid;
-    margin: 0 0.2rem;
-}
-.btn-toggle {
-    background-color: #ffc107;
-    border-color: #ffc107;
-    color: #212529;
-}
-.btn-delete {
-    background-color: #dc3545;
-    border-color: #dc3545;
+.btn-edit {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
     color: white;
+}
+.btn-save {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+.btn-cancel {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+/* タイトル編集中の入力フォーム */
+.title-edit-input {
+    width: 95%;
+    padding: 0.5rem;
+    border: 2px solid var(--primary-color);
+    border-radius: 4px;
+    font-size: 1rem;
 }

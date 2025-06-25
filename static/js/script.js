@@ -4,15 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const parentElement = button.closest('tr') || button.closest('.card');
         if (!parentElement) return;
 
-        // テーブル用：いいね数のセルを探す
-        let countSpan = parentElement.querySelector('.likes-cell .like-count');
-        if (countSpan) {
-            countSpan.textContent = newCount;
+        let countSpanInCell = parentElement.querySelector('.likes-cell .like-count');
+        if (countSpanInCell) {
+            countSpanInCell.textContent = newCount;
         }
-        // カード用：ボタン内のspanを探す
-        countSpan = button.querySelector('.like-count');
-        if(countSpan) {
-             countSpan.textContent = newCount;
+        let countSpanInButton = button.querySelector('.like-count');
+        if(countSpanInButton) {
+             countSpanInButton.textContent = newCount;
         }
     };
 
@@ -27,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     button.classList.toggle('active', data.liked);
                     const icon = data.liked ? '♥' : '♡';
-                    // カード形式のボタンにはいいね数も含まれるので、アイコンだけ差し替える
                     const likeCountSpan = button.querySelector('.like-count');
                     if (likeCountSpan) {
                         button.innerHTML = `${icon}<span class="like-count">${data.count}</span>`;
@@ -65,3 +62,74 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+if (window.location.pathname.includes('/admin')) {
+
+    document.querySelectorAll('.btn-edit').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const row = e.target.closest('tr');
+            const postId = row.querySelector('.btn-delete').closest('form').action.split('/').pop();
+
+            const titleCell = document.getElementById(`title-cell-${postId}`);
+            const actionCell = document.getElementById(`action-cell-${postId}`);
+
+            const currentTitle = titleCell.querySelector('a').textContent;
+            const originalTitleHTML = titleCell.innerHTML;
+            const originalActionsHTML = actionCell.innerHTML;
+
+            // タイトルセルを編集フォームに切り替え
+            titleCell.innerHTML = `<input type="text" class="title-edit-input" value="${currentTitle}">`;
+
+            // アクションセルを「保存」「キャンセル」ボタンに切り替え
+            actionCell.innerHTML = `
+                <button type="button" class="btn-save">保存</button>
+                <button type="button" class="btn-cancel">キャンセル</button>
+            `;
+
+            // --- キャンセルボタンの処理 ---
+            actionCell.querySelector('.btn-cancel').addEventListener('click', () => {
+                titleCell.innerHTML = originalTitleHTML;
+                actionCell.innerHTML = originalActionsHTML;
+                // イベントリスナーを再設定する必要があるため、少し複雑になるが、ここでは単純化
+                // 実際は、イベント委譲を使うか、この関数を再実行するのが望ましい
+                // 今回はページリロードで代用するのが最もシンプルで確実
+                window.location.reload();
+            });
+
+            // --- 保存ボタンの処理 ---
+            actionCell.querySelector('.btn-save').addEventListener('click', async () => {
+                const newTitle = titleCell.querySelector('.title-edit-input').value;
+                if (!newTitle || newTitle === currentTitle) {
+                    actionCell.querySelector('.btn-cancel').click(); // 変更がなければキャンセルと同じ動作
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/admin/edit_title/${postId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ title: newTitle })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // 成功したら表示を更新
+                        titleCell.innerHTML = originalTitleHTML;
+                        titleCell.querySelector('a').textContent = result.new_title;
+                        actionCell.innerHTML = originalActionsHTML;
+                        window.location.reload(); // 確実性を期してリロード
+                    } else {
+                        alert('エラー: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('タイトルの更新に失敗しました。');
+                    console.error('Failed to edit title:', error);
+                }
+            });
+        });
+    });
+}
+
