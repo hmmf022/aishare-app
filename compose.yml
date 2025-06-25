@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    container_name: aishare_app
+    ports:
+      - "5000:5000"
+    volumes:
+      # ホストの./dataフォルダをコンテナの/app/dataにマウントする
+      # これにより、コンテナを停止・削除してもDBファイルはホストに残り、データが消えない
+      - ./data:/app/data
+    restart: always
+
